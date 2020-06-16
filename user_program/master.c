@@ -61,6 +61,9 @@ int main (int argc, char* argv[])
 				write(dev_fd, buf, ret);//write to the the device
 			}while(ret > 0);
 			break;
+		case 'm':
+			// Note: We shall not mmap a piece of data that is larger than what kmalloc can handle.
+			break;
 	}
 
 	if(ioctl(dev_fd, 0x12345679) == -1) // end sending data, close the connection

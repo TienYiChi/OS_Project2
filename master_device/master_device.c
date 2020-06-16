@@ -65,16 +65,13 @@ struct mmap_info {
     int reference;	/* how many times it is mmapped */
 };
 
-static struct mmap_info *mmap_msg; // pointer to the mapped data in this device
-
-
 static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	PRINTFUNC();
-	// TODO
 	struct page* page;
-	mmap_msg = (struct mmap_info*)(vma->vm_private_data);
-	page = virt_to_page(mmap_msg->data);
+	struct mmap_info* info;
+	info = (struct mmap_info*)(vma->vm_private_data);
+	page = virt_to_page(info->data);
 	get_page(page);
 	vmf->page = page;
     return 0;
@@ -101,11 +98,18 @@ static const struct vm_operations_struct custom_vm_ops = {
 static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	PRINTFUNC();
-	vma->vm_flags |= VM_RESERVED;
-    if (remap_pfn_range(vma->vm_start, offset, vma->vm_end-vma->vm_start, vma->vm_page_prot)) {
-    	return -EAGAIN;
+	if (remap_page_range(
+			vma->vm_start,
+			virt_to_phys(file->private_data),
+			vma->vm_end - vma->vm_start,
+			vma->vm_page_prot) < 0) {
+		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
+		return -1;
 	}
+	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &custom_vm_ops;
+	vma->vm_private_data = filp->private_data;
+	
     mmap_dummy_open(vma);
     return 0;
 }
