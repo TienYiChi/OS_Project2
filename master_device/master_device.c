@@ -58,13 +58,38 @@ static mm_segment_t old_fs;
 static int addr_len;
 //static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
 
+
+static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+	// TODO
+}
+
+void mmap_dummy_op(struct vm_area_struct *vma)  
+{
+	return 0;
+}
+
+// vm operations struct
+static const struct vm_operations_struct custom_vm_ops = {
+	.open = mmap_dummy_op,
+	.close = mmap_dummy_op,
+	.fault = mmap_fault
+};
+
+static int custom_mmap(struct file *file, struct vm_area_struct *vma)
+{
+	// TODO
+	return 0;
+}
+
 //file operations
 static struct file_operations master_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = master_ioctl,
 	.open = master_open,
 	.write = send_msg,
-	.release = master_close
+	.release = master_close,
+	.mmap = custom_mmap
 };
 
 //device info
