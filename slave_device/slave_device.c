@@ -101,11 +101,16 @@ static void __exit slave_exit(void)
 
 int slave_close(struct inode *inode, struct file *filp)
 {
+	// TODO: kfree or vfree
 	return 0;
 }
 
+// TODO: kmalloc(k=ernel memory allocation) or vmalloc(virtual memory allocation)
+// Reference1: https://www.linuxjournal.com/article/6930
+// Reference2: http://brainychen72.blogspot.com/2013/08/linux-struct-file-privatedata.html
 int slave_open(struct inode *inode, struct file *filp)
 {
+	// TODO here
 	return 0;
 }
 static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
@@ -140,6 +145,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 
 			memset(&addr_srv, 0, sizeof(addr_srv));
 			addr_srv.sin_family = AF_INET;
+			// Note: 2325 is defined as DEFAULT_PORT in master_device.c
 			addr_srv.sin_port = htons(2325);
 			addr_srv.sin_addr.s_addr = inet_addr(ip);
 			addr_len = sizeof(struct sockaddr_in);
@@ -163,7 +169,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			ret = 0;
 			break;
 		case slave_IOCTL_MMAP:
-
+			// Note: Use krecv anyway.
 			break;
 
 		case slave_IOCTL_EXIT:

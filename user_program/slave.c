@@ -18,6 +18,8 @@ int main (int argc, char* argv[])
 	size_t ret, file_size = 0, data_size = -1;
 	char file_name[50];
 	char method[20];
+	// Note: INADDR_ANY means all IPs on this machine is being listened to.(See master_device.c, line 152)
+	// Note: since socket server was bound to INADDR_ANY, simply use 127.0.0.1 in argv.
 	char ip[20];
 	struct timeval start;
 	struct timeval end;
@@ -55,9 +57,13 @@ int main (int argc, char* argv[])
 				file_size += ret;
 			}while(ret > 0);
 			break;
+		case 'm'://mmap
+			// TODO: a loop that executes ioctl 0x12345678(slave_IOCTL_MMAP) each time,
+			//		then use mmap for both dev_fd and file_fd.
+
+			// Note: munmap at loop bottom
+			break:
 	}
-
-
 
 	if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
 	{

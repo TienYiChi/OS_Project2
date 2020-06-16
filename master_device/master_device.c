@@ -24,6 +24,8 @@
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
 #endif
 
+#define PRINTFUNC() printk(KERN_ALERT DEV_NAME ": %s called.\n", __func__)
+
 #define DEFAULT_PORT 2325
 #define master_IOCTL_CREATESOCK 0x12345677
 #define master_IOCTL_MMAP 0x12345678
@@ -56,15 +58,27 @@ static struct sockaddr_in addr_srv;//address for master
 static struct sockaddr_in addr_cli;//address for slave
 static mm_segment_t old_fs;
 static int addr_len;
-//static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
+static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
 
 
 static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
+	PRINTFUNC()
 	// TODO
+	struct page* page;
+	mmap_msg = (struct mmap_info*)vma->vm_private_data;
+	page = virt_to_page(mmap_msg->data);
+	get_page(page);
+	vmf->page = page;
+    return 0;
 }
 
-void mmap_dummy_op(struct vm_area_struct *vma)  
+void mmap_dummy_open(struct vm_area_struct *vma)  
+{
+	return 0;
+}
+
+void mmap_dummy_close(struct vm_area_struct *vma)  
 {
 	return 0;
 }
@@ -72,14 +86,27 @@ void mmap_dummy_op(struct vm_area_struct *vma)
 // vm operations struct
 static const struct vm_operations_struct custom_vm_ops = {
 	.open = mmap_dummy_op,
-	.close = mmap_dummy_op,
+	.close = mmap_dummy_close,
 	.fault = mmap_fault
 };
 
-static int custom_mmap(struct file *file, struct vm_area_struct *vma)
+// Reference: https://www.xml.com/ldd/chapter/book/ch13.html
+static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 {
-	// TODO
-	return 0;
+	PRINTFUNC()
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+    
+    if (offset >= _&thinsp;_pa(high_memory) || (filp->f_flags & O_SYNC)) {
+    	vma->vm_flags |= VM_IO;
+	}
+	vma->vm_flags |= VM_RESERVED;
+
+    if (remap_page_range(vma->vm_start, offset, vma->vm_end-vma->vm_start, vma->vm_page_prot)) {
+    	return -EAGAIN;
+	}
+	vma->vm_ops = &custom_vm_ops;
+    mmap_dummy_open(vma);
+    return 0;
 }
 
 //file operations
@@ -121,6 +148,7 @@ static int __init master_init(void)
 	memset(&addr_srv, 0, sizeof(addr_srv));
 	addr_srv.sin_family = AF_INET;
 	addr_srv.sin_port = htons(DEFAULT_PORT);
+	// Note: INADDR_ANY means all IPs on this machine is being listened to.
 	addr_srv.sin_addr.s_addr = INADDR_ANY;
 	addr_len = sizeof(struct sockaddr_in);
 
