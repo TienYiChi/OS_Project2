@@ -65,12 +65,12 @@ struct mmap_info {
     int reference;	/* how many times it is mmapped */
 };
 
-static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+int mmap_fault(struct vm_fault *vmf)
 {
-	PRINTFUNC();
 	struct page* page;
 	struct mmap_info* info;
-	info = (struct mmap_info*)(vma->vm_private_data);
+	PRINTFUNC();
+	info = (struct mmap_info*)(vmf->vma->vm_private_data);
 	page = virt_to_page(info->data);
 	get_page(page);
 	vmf->page = page;
@@ -98,9 +98,10 @@ static const struct vm_operations_struct custom_vm_ops = {
 static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	PRINTFUNC();
-	if (remap_page_range(
+	if (remap_pfn_range(
+			vma,
 			vma->vm_start,
-			virt_to_phys(file->private_data),
+			(virt_to_phys(filp->private_data) >> PAGE_SHIFT) + vma->vm_pgoff,
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
