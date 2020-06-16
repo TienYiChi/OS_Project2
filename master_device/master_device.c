@@ -24,6 +24,7 @@
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
 #endif
 
+#define DEV_NAME "master_device"
 #define PRINTFUNC() printk(KERN_ALERT DEV_NAME ": %s called.\n", __func__)
 
 #define DEFAULT_PORT 2325
@@ -58,15 +59,21 @@ static struct sockaddr_in addr_srv;//address for master
 static struct sockaddr_in addr_cli;//address for slave
 static mm_segment_t old_fs;
 static int addr_len;
-static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
+
+struct mmap_info {
+    char* data;		/* the data */
+    int reference;	/* how many times it is mmapped */
+};
+
+static struct mmap_info *mmap_msg; // pointer to the mapped data in this device
 
 
 static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
-	PRINTFUNC()
+	PRINTFUNC();
 	// TODO
 	struct page* page;
-	mmap_msg = (struct mmap_info*)vma->vm_private_data;
+	mmap_msg = (struct mmap_info*)(vma->vm_private_data);
 	page = virt_to_page(mmap_msg->data);
 	get_page(page);
 	vmf->page = page;
@@ -75,17 +82,17 @@ static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 void mmap_dummy_open(struct vm_area_struct *vma)  
 {
-	return 0;
+	return;
 }
 
 void mmap_dummy_close(struct vm_area_struct *vma)  
 {
-	return 0;
+	return;
 }
 
 // vm operations struct
 static const struct vm_operations_struct custom_vm_ops = {
-	.open = mmap_dummy_op,
+	.open = mmap_dummy_open,
 	.close = mmap_dummy_close,
 	.fault = mmap_fault
 };
@@ -93,15 +100,9 @@ static const struct vm_operations_struct custom_vm_ops = {
 // Reference: https://www.xml.com/ldd/chapter/book/ch13.html
 static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 {
-	PRINTFUNC()
-	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
-    
-    if (offset >= _&thinsp;_pa(high_memory) || (filp->f_flags & O_SYNC)) {
-    	vma->vm_flags |= VM_IO;
-	}
+	PRINTFUNC();
 	vma->vm_flags |= VM_RESERVED;
-
-    if (remap_page_range(vma->vm_start, offset, vma->vm_end-vma->vm_start, vma->vm_page_prot)) {
+    if (remap_pfn_range(vma->vm_start, offset, vma->vm_end-vma->vm_start, vma->vm_page_prot)) {
     	return -EAGAIN;
 	}
 	vma->vm_ops = &custom_vm_ops;

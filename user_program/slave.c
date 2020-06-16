@@ -62,7 +62,7 @@ int main (int argc, char* argv[])
 			//		then use mmap for both dev_fd and file_fd.
 
 			// Note: munmap at loop bottom
-			break:
+			break;
 	}
 
 	if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
