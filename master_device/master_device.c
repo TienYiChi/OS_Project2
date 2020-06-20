@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/mm.h>
+#include <linux/gfp.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
 #ifndef VM_RESERVED
@@ -101,7 +102,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (remap_pfn_range(
 			vma,
 			vma->vm_start,
-			(virt_to_phys(filp->private_data) >> PAGE_SHIFT) + vma->vm_pgoff,
+			page_to_phys(filp->private_data),
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
@@ -112,7 +113,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	vma->vm_private_data = filp->private_data;
 	
     mmap_dummy_open(vma);
-    return 0;
+    return vma->vm_start;
 }
 
 //file operations
@@ -196,16 +197,25 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
+	free_page(filp->private_data);
+	filp->private_data = NULL;
 	return 0;
 }
 
 int master_open(struct inode *inode, struct file *filp)
 {
+	unsigned long page_addr;
+	page_addr = alloc_page(GFP_KERNEL);
+	if(!page_addr) {
+		return -ENOMEM;
+	}
+	// Save this address for later use.
+	filp->private_data = page_addr;
 	return 0;
 }
 
 
-static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
+static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
 	size_t data_size = 0, offset = 0;
@@ -234,6 +244,8 @@ static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
 			ret = 0;
 			break;
 		case master_IOCTL_MMAP:
+			// Send one page at a time.
+			ksend(sockfd_cli, flip->private_data, PAGE_SIZE, 0);
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
