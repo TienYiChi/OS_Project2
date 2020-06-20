@@ -54,7 +54,7 @@ static void __exit master_exit(void);
 
 int master_close(struct inode *inode, struct file *filp);
 int master_open(struct inode *inode, struct file *filp);
-static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param, struct shm_comm_info *info);
+static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param);
 static ssize_t send_msg(struct file *file, const char __user *buf, size_t count, loff_t *data);//use when user is writing to this device
 
 static ksocket_t sockfd_srv, sockfd_cli;//socket for master and socket for slave
@@ -152,11 +152,11 @@ int master_open(struct inode *inode, struct file *filp)
 }
 
 
-static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param, struct shm_comm_info *info)
+static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
-	size_t data_size = 0, offset = 0;
 	char *tmp;
+	struct shm_comm_info *info;
 	pgd_t *pgd;
 	p4d_t *p4d;
 	pud_t *pud;
@@ -181,6 +181,7 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			ret = 0;
 			break;
 		case master_IOCTL_MMAP:
+			info = (struct shm_comm_info *)ioctl_param;
 			memcpy(info->to_addr, info->from_addr, info->len);
 			break;
 		case master_IOCTL_EXIT:

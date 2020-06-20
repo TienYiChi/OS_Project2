@@ -65,7 +65,7 @@ int main (int argc, char* argv[])
 			break;
 		case 'm':
 			shm_fd = shm_open(SHM_ID, O_CREAT | O_EXCL | O_RDWR, 0600);
-			if (fd < 0) {
+			if (shm_fd < 0) {
 				perror("shm_open()");
     			return EXIT_FAILURE;
   			}
@@ -86,7 +86,7 @@ int main (int argc, char* argv[])
 			info.from_addr = file_address;
 			info.to_addr = shm_address;
 			info.len = file_size;
-			if(ioctl(dev_fd,0x12345678,file_size, &info) < 0)
+			if(ioctl(dev_fd,0x12345678, &info) < 0)
 			{
 				perror("ioctl error\n");
 				return 1;
@@ -94,6 +94,7 @@ int main (int argc, char* argv[])
 
 			munmap(file_address, file_size);
 			munmap(shm_address, file_size);
+			shm_unlink(SHM_ID);
 			break;
 	}
 
