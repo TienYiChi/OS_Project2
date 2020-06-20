@@ -21,6 +21,9 @@
 #include <linux/gfp.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
+#include <sys/mman.h>
+#include "common.h"
+
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
 #endif
@@ -61,18 +64,11 @@ static struct sockaddr_in addr_cli;//address for slave
 static mm_segment_t old_fs;
 static int addr_len;
 
-struct mmap_info {
-    char* data;		/* the data */
-    int reference;	/* how many times it is mmapped */
-};
-
 int mmap_fault(struct vm_fault *vmf)
 {
 	struct page* page;
-	struct mmap_info* info;
 	PRINTFUNC();
-	info = (struct mmap_info*)(vmf->vma->vm_private_data);
-	page = virt_to_page(info->data);
+	page = vmf->vma->vm_private_data;
 	get_page(page);
 	vmf->page = page;
     return 0;
@@ -113,7 +109,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	vma->vm_private_data = filp->private_data;
 	
     mmap_dummy_open(vma);
-    return vma->vm_start;
+    return 0;
 }
 
 //file operations
@@ -215,7 +211,7 @@ int master_open(struct inode *inode, struct file *filp)
 }
 
 
-static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
+static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param, struct shm_comm_info *info)
 {
 	long ret = -EINVAL;
 	size_t data_size = 0, offset = 0;
@@ -244,8 +240,8 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			ret = 0;
 			break;
 		case master_IOCTL_MMAP:
-			// Send one page at a time.
-			ksend(sockfd_cli, flip->private_data, PAGE_SIZE, 0);
+			memcpy(info->to_addr, info->from_addr, info->len);
+			//ksend(sockfd_cli, flip->private_data, PAGE_SIZE, 0);
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
