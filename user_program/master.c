@@ -91,13 +91,6 @@ int main (int argc, char* argv[])
 				perror("ioctl error\n");
 				return 1;
 			}
-			// size_t len = file_size;
-			// if ((file_size - offset) < PAGE_SIZE)
-			// {
-			// 	len = file_size - offset;
-			// }
-			// memcpy(shm_address,file_address,file_size);
-			// offset = offset + len;
 
 			munmap(file_address, file_size);
 			munmap(shm_address, file_size);

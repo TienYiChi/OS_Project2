@@ -241,7 +241,6 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			memcpy(info->to_addr, info->from_addr, info->len);
-			//ksend(sockfd_cli, flip->private_data, PAGE_SIZE, 0);
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
