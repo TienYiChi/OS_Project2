@@ -21,8 +21,7 @@
 #include <linux/gfp.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
-#include <sys/mman.h>
-#include "common.h"
+#include "../user_program/common.h"
 
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
@@ -55,7 +54,7 @@ static void __exit master_exit(void);
 
 int master_close(struct inode *inode, struct file *filp);
 int master_open(struct inode *inode, struct file *filp);
-static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param);
+static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param, struct shm_comm_info *info);
 static ssize_t send_msg(struct file *file, const char __user *buf, size_t count, loff_t *data);//use when user is writing to this device
 
 static ksocket_t sockfd_srv, sockfd_cli;//socket for master and socket for slave
@@ -64,54 +63,6 @@ static struct sockaddr_in addr_cli;//address for slave
 static mm_segment_t old_fs;
 static int addr_len;
 
-int mmap_fault(struct vm_fault *vmf)
-{
-	struct page* page;
-	PRINTFUNC();
-	page = vmf->vma->vm_private_data;
-	get_page(page);
-	vmf->page = page;
-    return 0;
-}
-
-void mmap_dummy_open(struct vm_area_struct *vma)  
-{
-	return;
-}
-
-void mmap_dummy_close(struct vm_area_struct *vma)  
-{
-	return;
-}
-
-// vm operations struct
-static const struct vm_operations_struct custom_vm_ops = {
-	.open = mmap_dummy_open,
-	.close = mmap_dummy_close,
-	.fault = mmap_fault
-};
-
-// Reference: https://www.xml.com/ldd/chapter/book/ch13.html
-static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
-{
-	PRINTFUNC();
-	if (remap_pfn_range(
-			vma,
-			vma->vm_start,
-			page_to_phys(filp->private_data),
-			vma->vm_end - vma->vm_start,
-			vma->vm_page_prot) < 0) {
-		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
-		return -1;
-	}
-	vma->vm_flags |= VM_RESERVED;
-	vma->vm_ops = &custom_vm_ops;
-	vma->vm_private_data = filp->private_data;
-	
-    mmap_dummy_open(vma);
-    return 0;
-}
-
 //file operations
 static struct file_operations master_fops = {
 	.owner = THIS_MODULE,
@@ -119,7 +70,6 @@ static struct file_operations master_fops = {
 	.open = master_open,
 	.write = send_msg,
 	.release = master_close,
-	.mmap = custom_mmap
 };
 
 //device info
@@ -193,20 +143,11 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
-	free_page(filp->private_data);
-	filp->private_data = NULL;
 	return 0;
 }
 
 int master_open(struct inode *inode, struct file *filp)
 {
-	unsigned long page_addr;
-	page_addr = alloc_page(GFP_KERNEL);
-	if(!page_addr) {
-		return -ENOMEM;
-	}
-	// Save this address for later use.
-	filp->private_data = page_addr;
 	return 0;
 }
 
@@ -276,8 +217,6 @@ static ssize_t send_msg(struct file *file, const char __user *buf, size_t count,
 	return count;
 
 }
-
-
 
 
 module_init(master_init);
