@@ -18,13 +18,15 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/mm.h>
+#include <linux/gfp.h> //#define free_page(addr) free_pages((addr), 0) #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
 #include <asm/page.h>
 
 
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
 #endif
-
+#define DEV_NAME "slave_device"
+#define PRINTFUNC() printk(KERN_ALERT DEV_NAME ": %s called.\n", __func__)
 #define slave_IOCTL_CREATESOCK 0x12345677
 #define slave_IOCTL_MMAP 0x12345678
 #define slave_IOCTL_EXIT 0x12345679
@@ -59,13 +61,63 @@ static mm_segment_t old_fs;
 static ksocket_t sockfd_cli;//socket to the master server
 static struct sockaddr_in addr_srv; //address of the master server
 
+struct mmap_info {
+    char* data;		/* the data */
+    int reference;	/* how many times it is mmapped */
+};
+
+int mmap_fault(struct vm_fault *vmf)
+{
+	struct page* page;
+	struct mmap_info* info;
+	PRINTFUNC();
+	info = (struct mmap_info*)(vmf->vma->vm_private_data);
+	page = virt_to_page(info->data);
+	get_page(page);
+	vmf->page = page;
+    return 0;
+}
+void mmap_dummy_open(struct vm_area_struct *vma)  
+{
+	return;
+}
+
+void mmap_dummy_close(struct vm_area_struct *vma)  
+{
+	return;
+}
+// vm operations struct
+static const struct vm_operations_struct custom_vm_ops = {
+	.open = mmap_dummy_open,
+	.close = mmap_dummy_close,
+	.fault = mmap_fault
+};
+static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	PRINTFUNC();
+	if (remap_pfn_range(
+			vma,
+			vma->vm_start,
+			(virt_to_phys(filp->private_data) >> PAGE_SHIFT) + vma->vm_pgoff,
+			vma->vm_end - vma->vm_start,
+			vma->vm_page_prot) < 0) {
+		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
+		return -1;
+	}
+	vma->vm_flags |= VM_RESERVED;
+	vma->vm_ops = &custom_vm_ops;
+	vma->vm_private_data = filp->private_data;
+	mmap_dummy_open(vma);
+    return 0;
+}
 //file operations
 static struct file_operations slave_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = slave_ioctl,
 	.open = slave_open,
 	.read = receive_msg,
-	.release = slave_close
+	.release = slave_close,
+	.mmap = custom_mmap
 };
 
 //device info
@@ -102,6 +154,8 @@ static void __exit slave_exit(void)
 int slave_close(struct inode *inode, struct file *filp)
 {
 	// TODO: kfree or vfree
+	free_pages(filp->private_data, 7);
+	filp->private_data = NULL;
 	return 0;
 }
 
@@ -110,7 +164,8 @@ int slave_close(struct inode *inode, struct file *filp)
 // Reference2: http://brainychen72.blogspot.com/2013/08/linux-struct-file-privatedata.html
 int slave_open(struct inode *inode, struct file *filp)
 {
-	// TODO here
+	// TODO here	
+	alloc_pages(filp->private_data, 7);
 	return 0;
 }
 static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
@@ -170,6 +225,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			break;
 		case slave_IOCTL_MMAP:
 			// Note: Use krecv anyway.
+			len = krecv(sockfd_cli, file->private_data, 4096, 0);
 			break;
 
 		case slave_IOCTL_EXIT:
