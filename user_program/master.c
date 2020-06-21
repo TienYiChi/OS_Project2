@@ -16,7 +16,7 @@
 size_t get_filesize(const char* filename);//get the size of the input file
 
 /**
-*	argv[0]: method, argv[1]: # of files, argv[2...]: file names
+*	argv[1]: method, argv[2]: # of files, argv[3...]: file names
 **/
 int main (int argc, char* argv[])
 {
@@ -36,13 +36,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (argv[3], O_RDWR)) < 0 )
+	if( (file_fd = open (argv[4], O_RDWR)) < 0 )
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if( (file_size = get_filesize(argv[3])) < 0)
+	if( (file_size = get_filesize(argv[4])) < 0)
 	{
 		perror("failed to get filesize\n");
 		return 1;
@@ -56,7 +56,7 @@ int main (int argc, char* argv[])
 	}
 
 
-	switch(argv[0][0])
+	switch(argv[1][0])
 	{
 		case 'f': //fcntl : read()/write()
 			do

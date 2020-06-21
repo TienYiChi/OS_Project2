@@ -15,7 +15,7 @@
 #define BUF_SIZE 512
 
 /**
-*	argv[0]: method, argv[1]: ip, argv[2]: # of files, argv[3...]: file names
+*	argv[1]: method, argv[2]: ip, argv[3]: # of files, argv[4...]: file names
 **/
 int main (int argc, char* argv[])
 {
@@ -40,13 +40,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (argv[3], O_RDWR | O_CREAT | O_TRUNC)) < 0)
+	if( (file_fd = open (argv[4], O_RDWR | O_CREAT | O_TRUNC)) < 0)
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if(ioctl(dev_fd, 0x12345677, argv[1]) == -1)	//0x12345677 : connect to master in the device
+	if(ioctl(dev_fd, 0x12345677, argv[2]) == -1)	//0x12345677 : connect to master in the device
 	{
 		perror("ioclt create slave socket error\n");
 		return 1;
@@ -54,7 +54,7 @@ int main (int argc, char* argv[])
 
     write(1, "ioctl success\n", 14);
 
-	switch(argv[0][0])
+	switch(argv[1][0])
 	{
 		case 'f'://fcntl : read()/write()
 			do
