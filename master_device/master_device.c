@@ -182,7 +182,9 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			info = (struct shm_comm_info *)ioctl_param;
-			memcpy(info->to_addr, info->from_addr, info->len);
+			printk("Ready to copy from %p to %p.\n", (void*)info->from_addr, (void*)info->to_addr);
+			memcpy((void*)info->to_addr, (void*)info->from_addr, info->len);
+			printk("File copied.");
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)

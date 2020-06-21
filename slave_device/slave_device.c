@@ -19,7 +19,7 @@
 #include <linux/debugfs.h>
 #include <linux/mm.h>
 #include <asm/page.h>
-
+#include "../user_program/common.h"
 
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
@@ -123,6 +123,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 	char *tmp, ip[20], buf[BUF_SIZE];
 	struct page *p_print;
 	unsigned char *px;
+	struct shm_comm_info *info;
 
     pgd_t *pgd;
 	p4d_t *p4d;
@@ -169,7 +170,10 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			ret = 0;
 			break;
 		case slave_IOCTL_MMAP:
-			// Note: Use krecv anyway.
+			info = (struct shm_comm_info *)ioctl_param;
+			printk("Ready to copy from %p to %p.\n", (void*)info->from_addr, (void*)info->to_addr);
+			memcpy((void*)info->to_addr, (void*)info->from_addr, info->len);
+			printk("File copied.");
 			break;
 
 		case slave_IOCTL_EXIT:

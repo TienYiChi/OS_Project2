@@ -15,16 +15,18 @@
 #define BUF_SIZE 512
 size_t get_filesize(const char* filename);//get the size of the input file
 
-
+/**
+*	argv[0]: method, argv[1]: # of files, argv[2...]: file names
+**/
 int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int i, dev_fd, file_fd, shm_fd;// the fd for the device and the fd for the input file
 	size_t ret, file_size, offset = 0, tmp;
-	void *shm_address = NULL, *file_address = NULL;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
+	void *shm_address = NULL, *file_address = NULL;
 	struct shm_comm_info info;
 
 
@@ -34,13 +36,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (argv[0], O_RDWR)) < 0 )
+	if( (file_fd = open (argv[3], O_RDWR)) < 0 )
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if( (file_size = get_filesize(argv[0])) < 0)
+	if( (file_size = get_filesize(argv[3])) < 0)
 	{
 		perror("failed to get filesize\n");
 		return 1;
@@ -54,7 +56,7 @@ int main (int argc, char* argv[])
 	}
 
 
-	switch(argv[1][0])
+	switch(argv[0][0])
 	{
 		case 'f': //fcntl : read()/write()
 			do
@@ -69,7 +71,7 @@ int main (int argc, char* argv[])
 				perror("shm_open()");
     			return EXIT_FAILURE;
   			}
-			ftruncate(shm_fd, SHM_SIZE);
+			ftruncate(shm_fd, file_size);
 
 			// This is Linux default mmap.
 			if((file_address = mmap(NULL,file_size,PROT_READ,MAP_SHARED,file_fd, 0)) == MAP_FAILED)
