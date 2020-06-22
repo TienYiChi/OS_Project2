@@ -13,17 +13,18 @@
 #define BUF_SIZE 512
 size_t get_filesize(const char* filename);//get the size of the input file
 
-
+/**
+*	argv[1]: method, argv[2]: # of files, argv[3...]: file names
+**/
 int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
 	size_t ret, file_size, offset = 0, tmp;
-	char file_name[50], method[20];
-	char *kernel_address = NULL, *file_address = NULL;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
+	void *device_addr = NULL, *file_addr = NULL;
 
 
 	if( (dev_fd = open("/dev/master_device", O_RDWR)) < 0)
@@ -32,13 +33,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (file_name, O_RDWR)) < 0 )
+	if( (file_fd = open(argv[3], O_RDWR)) < 0 )
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if( (file_size = get_filesize(file_name)) < 0)
+	if( (file_size = get_filesize(argv[3])) < 0)
 	{
 		perror("failed to get filesize\n");
 		return 1;
@@ -52,8 +53,7 @@ int main (int argc, char* argv[])
 	}
 
 
-	switch(method[0])
-	{
+	switch(argv[1][0]) {
 		case 'f': //fcntl : read()/write()
 			do
 			{
@@ -62,12 +62,36 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			// Note: We shall not mmap a piece of data that is larger than what kmalloc can handle.
+			while(offset < file_size) {
+				size_t len = PAGE_SIZE;
+				if ((file_size - offset) < PAGE_SIZE) {
+					len=file_size-offset;
+				}
+				
+
+				if((file_addr=mmap(NULL,len,PROT_READ,MAP_SHARED,file_fd,offset))==MAP_FAILED) {
+					perror("mmap input file error\n");
+					return 1;
+				}
+				if((device_addr=mmap(NULL,len,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
+					perror("mmap device error\n");
+					return 1;
+				}
+				memcpy(device_addr,file_addr, len);
+
+				offset=offset+len;
+				if(ioctl(dev_fd,0x12345678,len)<0) {
+					perror("ioctl error\n");
+					return 1;
+				}
+			}
+
+			munmap(file_addr,file_size);
+			munmap(device_addr,file_size);
 			break;
 	}
 
-	if(ioctl(dev_fd, 0x12345679) == -1) // end sending data, close the connection
-	{
+	if(ioctl(dev_fd, 0x12345679) == -1) { // end sending data, close the connection
 		perror("ioclt server exits error\n");
 		return 1;
 	}

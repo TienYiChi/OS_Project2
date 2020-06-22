@@ -11,20 +11,19 @@
 
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
+
+/**
+*	argv[1]: method, argv[2]: ip, argv[3]: # of files, argv[4...]: file names
+**/
 int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size = 0, data_size = -1;
-	char file_name[50];
-	char method[20];
-	// Note: INADDR_ANY means all IPs on this machine is being listened to.(See master_device.c, line 152)
-	// Note: since socket server was bound to INADDR_ANY, simply use 127.0.0.1 in argv.
-	char ip[20];
+	size_t ret, file_size = -1, data_size = -1;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
-	char *kernel_address, *file_address;
+	void *device_addr = NULL, *file_addr = NULL;
 
 
 	if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
@@ -33,13 +32,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (file_name, O_RDWR | O_CREAT | O_TRUNC)) < 0)
+	if( (file_fd = open(argv[4], O_RDWR | O_CREAT | O_TRUNC)) < 0)
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if(ioctl(dev_fd, 0x12345677, ip) == -1)	//0x12345677 : connect to master in the device
+	if(ioctl(dev_fd, 0x12345677,  argv[2]) == -1)	//0x12345677 : connect to master in the device
 	{
 		perror("ioclt create slave socket error\n");
 		return 1;
@@ -47,7 +46,7 @@ int main (int argc, char* argv[])
 
     write(1, "ioctl success\n", 14);
 
-	switch(method[0])
+	switch(argv[1][0])
 	{
 		case 'f'://fcntl : read()/write()
 			do
@@ -58,10 +57,27 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm'://mmap
-			// TODO: a loop that executes ioctl 0x12345678(slave_IOCTL_MMAP) each time,
-			//		then use mmap for both dev_fd and file_fd.
 
-			// Note: munmap at loop bottom
+			if((file_size = ioctl(dev_fd, 0x12345678, 0)) < 0) {
+				perror("ioctl error\n");
+				return 1;
+			}
+			
+			ftruncate(file_fd, file_size);
+			if((file_addr=mmap(NULL,file_size,PROT_WRITE,MAP_SHARED,file_fd,0))==MAP_FAILED) {
+				perror("mmap input file error\n");
+				return 1;
+			}
+			if((device_addr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
+				perror("mmap device error\n");
+				return 1;
+			}
+
+			memcpy(file_addr,device_addr,file_size);
+
+			munmap(file_addr,file_size);
+			munmap(device_addr,file_size);
+
 			break;
 	}
 

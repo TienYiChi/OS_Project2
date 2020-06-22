@@ -20,7 +20,7 @@
 #include <linux/mm.h>
 #include <linux/gfp.h> //#define free_page(addr) free_pages((addr), 0) #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
 #include <asm/page.h>
-
+#include "../user_program/common.h"
 
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
@@ -31,11 +31,7 @@
 #define slave_IOCTL_MMAP 0x12345678
 #define slave_IOCTL_EXIT 0x12345679
 
-
 #define BUF_SIZE 512
-
-
-
 
 struct dentry  *file1;//debug file
 
@@ -61,18 +57,12 @@ static mm_segment_t old_fs;
 static ksocket_t sockfd_cli;//socket to the master server
 static struct sockaddr_in addr_srv; //address of the master server
 
-struct mmap_info {
-    char* data;		/* the data */
-    int reference;	/* how many times it is mmapped */
-};
 
 int mmap_fault(struct vm_fault *vmf)
 {
 	struct page* page;
-	struct mmap_info* info;
 	PRINTFUNC();
-	info = (struct mmap_info*)(vmf->vma->vm_private_data);
-	page = virt_to_page(info->data);
+	page = virt_to_page(vmf->address);
 	get_page(page);
 	vmf->page = page;
     return 0;
@@ -98,7 +88,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (remap_pfn_range(
 			vma,
 			vma->vm_start,
-			(virt_to_phys(filp->private_data) >> PAGE_SHIFT) + vma->vm_pgoff,
+			page_to_pfn((struct page *)(filp->private_data)),
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
@@ -107,8 +97,9 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &custom_vm_ops;
 	vma->vm_private_data = filp->private_data;
-	mmap_dummy_open(vma);
-    return 0;
+	
+    mmap_dummy_open(vma);
+    return vma->vm_start;
 }
 //file operations
 static struct file_operations slave_fops = {
@@ -154,7 +145,7 @@ static void __exit slave_exit(void)
 int slave_close(struct inode *inode, struct file *filp)
 {
 	// TODO: kfree or vfree
-	free_pages(filp->private_data, 7);
+	__free_pages(filp->private_data, SHIFT_ORDER);
 	filp->private_data = NULL;
 	return 0;
 }
@@ -164,20 +155,27 @@ int slave_close(struct inode *inode, struct file *filp)
 // Reference2: http://brainychen72.blogspot.com/2013/08/linux-struct-file-privatedata.html
 int slave_open(struct inode *inode, struct file *filp)
 {
-	// TODO here	
-	alloc_pages(filp->private_data, 7);
+	struct page *page_addr;
+	page_addr = alloc_pages(GFP_KERNEL, SHIFT_ORDER);
+	if(!page_addr) {
+		return -ENOMEM;
+	}
+	// Save this address for later use.
+	filp->private_data = page_addr;
 	return 0;
 }
-static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
+static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
 
 	int addr_len ;
 	unsigned int i;
-	size_t len, data_size = 0;
+	size_t len = 0, data_size = 0;
+	unsigned long offset = 0;
 	char *tmp, ip[20], buf[BUF_SIZE];
 	struct page *p_print;
 	unsigned char *px;
+	void *buf_addr = NULL;
 
     pgd_t *pgd;
 	p4d_t *p4d;
@@ -225,7 +223,13 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			break;
 		case slave_IOCTL_MMAP:
 			// Note: Use krecv anyway.
-			len = krecv(sockfd_cli, file->private_data, 4096, 0);
+			while (offset < (1 << SHIFT_ORDER)) {
+				buf_addr = (page_to_virt(filp->private_data) >> PAGE_SHIFT + offset) << PAGE_SHIFT;
+      			len = krecv(sockfd_cli, buf_addr, PAGE_SIZE, 0);
+				offset += 1;
+				data_size += len;
+    		}
+    		ret = data_size;
 			break;
 
 		case slave_IOCTL_EXIT:

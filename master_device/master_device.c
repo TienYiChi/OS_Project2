@@ -21,6 +21,8 @@
 #include <linux/gfp.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
+#include "../user_program/common.h"
+
 #ifndef VM_RESERVED
 #define VM_RESERVED   (VM_DONTEXPAND | VM_DONTDUMP)
 #endif
@@ -61,18 +63,11 @@ static struct sockaddr_in addr_cli;//address for slave
 static mm_segment_t old_fs;
 static int addr_len;
 
-struct mmap_info {
-    char* data;		/* the data */
-    int reference;	/* how many times it is mmapped */
-};
-
 int mmap_fault(struct vm_fault *vmf)
 {
 	struct page* page;
-	struct mmap_info* info;
 	PRINTFUNC();
-	info = (struct mmap_info*)(vmf->vma->vm_private_data);
-	page = virt_to_page(info->data);
+	page = virt_to_page(vmf->address);
 	get_page(page);
 	vmf->page = page;
     return 0;
@@ -102,7 +97,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (remap_pfn_range(
 			vma,
 			vma->vm_start,
-			page_to_phys(filp->private_data),
+			page_to_pfn((struct page *)(filp->private_data)),
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
@@ -197,14 +192,14 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
-	free_page(filp->private_data);
+	__free_page(filp->private_data);
 	filp->private_data = NULL;
 	return 0;
 }
 
 int master_open(struct inode *inode, struct file *filp)
 {
-	unsigned long page_addr;
+	struct page *page_addr;
 	page_addr = alloc_page(GFP_KERNEL);
 	if(!page_addr) {
 		return -ENOMEM;
@@ -218,8 +213,9 @@ int master_open(struct inode *inode, struct file *filp)
 static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
-	size_t data_size = 0, offset = 0;
+	size_t len = 0, data_size = 0, offset = 0;
 	char *tmp;
+	void *buf_addr = NULL;
 	pgd_t *pgd;
 	p4d_t *p4d;
 	pud_t *pud;
@@ -244,8 +240,9 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			ret = 0;
 			break;
 		case master_IOCTL_MMAP:
-			// Send one page at a time.
-			ksend(sockfd_cli, flip->private_data, PAGE_SIZE, 0);
+			// ioctl_param is the len to be sent (in bytes).
+			ksend(sockfd_cli, page_to_virt(filp->private_data), ioctl_param, 0);
+    		ret = ioctl_param;
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
