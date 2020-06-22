@@ -36,13 +36,13 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (argv[4], O_RDWR)) < 0 )
+	if( (file_fd = open(argv[3], O_RDWR)) < 0 )
 	{
 		perror("failed to open input file\n");
 		return 1;
 	}
 
-	if( (file_size = get_filesize(argv[4])) < 0)
+	if( (file_size = get_filesize(argv[3])) < 0)
 	{
 		perror("failed to get filesize\n");
 		return 1;
@@ -66,7 +66,7 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			shm_fd = shm_open(SHM_ID, O_CREAT | O_EXCL | O_RDWR, 0600);
+			shm_fd = shm_open(SHM_ID, O_CREAT | O_RDWR, 0600);
 			if (shm_fd < 0) {
 				perror("shm_open()");
     			return EXIT_FAILURE;
@@ -96,7 +96,7 @@ int main (int argc, char* argv[])
 
 			munmap(file_address, file_size);
 			munmap(shm_address, file_size);
-			shm_unlink(SHM_ID);
+			// shm_unlink(SHM_ID);
 			break;
 	}
 

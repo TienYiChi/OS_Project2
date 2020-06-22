@@ -65,6 +65,7 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm'://mmap+shm
+			file_size = PAGE_SIZE;
 			shm_fd = shm_open(SHM_ID, O_RDONLY, 0666);
 			if (shm_fd < 0) {
 				perror("shm_open()");
