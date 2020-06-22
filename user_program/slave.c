@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include "common.h"
 
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512

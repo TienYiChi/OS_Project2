@@ -223,11 +223,12 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 			break;
 		case slave_IOCTL_MMAP:
 			// Note: Use krecv anyway.
+			buf_addr = page_to_virt((struct page *)filp->private_data);
 			while (offset < (1 << SHIFT_ORDER)) {
-				buf_addr = (page_to_virt(filp->private_data) >> PAGE_SHIFT + offset) << PAGE_SHIFT;
       			len = krecv(sockfd_cli, buf_addr, PAGE_SIZE, 0);
 				offset += 1;
 				data_size += len;
+				buf_addr = buf_addr + PAGE_SIZE*sizeof(char);
     		}
     		ret = data_size;
 			break;

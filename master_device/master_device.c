@@ -241,7 +241,7 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			// ioctl_param is the len to be sent (in bytes).
-			ksend(sockfd_cli, page_to_virt(filp->private_data), ioctl_param, 0);
+			ksend(sockfd_cli, page_to_virt((struct page *)filp->private_data), ioctl_param, 0);
     		ret = ioctl_param;
 			break;
 		case master_IOCTL_EXIT:
