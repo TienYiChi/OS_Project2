@@ -99,6 +99,27 @@ int main (int argc, char* argv[])
 			munmap(file_addr,file_size);
 			munmap(device_addr,file_size);
 			break;
+
+
+			if((file_addr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,file_fd,0))==MAP_FAILED) {
+				perror("mmap input file error\n");
+				return 1;
+			}
+			if((device_addr=mmap(NULL,file_size,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
+				perror("mmap device error\n");
+				return 1;
+			}
+
+			memcpy(device_addr,file_addr, len);
+
+			if((len_recv = ioctl(dev_fd, 0x12345678, file_size)) < file_size) {
+				perror("file size inconsistency\n");
+				return 1;
+			}
+			munmap(file_addr,file_size);
+			munmap(device_addr,file_size);
+
+			break;
 	}
 
 	if(ioctl(dev_fd, 0x12345679) == -1) { // end sending data, close the connection

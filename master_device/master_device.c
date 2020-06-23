@@ -192,7 +192,7 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
-	__free_page(filp->private_data);
+	__free_pages(filp->private_data, SHIFT_ORDER);
 	filp->private_data = NULL;
 	return 0;
 }
@@ -200,7 +200,7 @@ int master_close(struct inode *inode, struct file *filp)
 int master_open(struct inode *inode, struct file *filp)
 {
 	struct page *page_addr;
-	page_addr = alloc_page(GFP_KERNEL);
+	page_addr = alloc_pages(GFP_KERNEL, SHIFT_ORDER);
 	if(!page_addr) {
 		return -ENOMEM;
 	}
@@ -243,8 +243,20 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			// ioctl_param is the len to be sent (in bytes).
-			ksend(sockfd_cli, page_to_virt((struct page *)filp->private_data), ioctl_param, 0);
-    		ret = ioctl_param;
+			size_t file_size = (size_t)ioctl_param;
+			buf_addr = filp->private_data;
+			while (offset < (1 << SHIFT_ORDER)) {
+				if ((file_size - data_size) < PAGE_SIZE) {
+                    len = file_size - data_size;
+                } else {
+					len = PAGE_SIZE;
+				}
+      			len = ksend(sockfd_cli, buf_addr, len, 0);
+				offset += 1;
+				data_size += len;
+				buf_addr = buf_addr + PAGE_SIZE*sizeof(char);
+    		}
+    		ret = data_size;
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
