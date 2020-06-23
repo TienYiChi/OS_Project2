@@ -21,7 +21,7 @@ int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size, offset = 0, tmp = 0;
+	size_t ret, file_size, offset = 0, tmp = 0, len_sent = 0;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
@@ -63,44 +63,6 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			while (offset < (1 << SHIFT_ORDER)) {
-				size_t len = PAGE_SIZE;
-				if ((file_size - tmp) < PAGE_SIZE) {
-					len = file_size - tmp;
-				}
-				
-				if(len > 0) {
-					printf("mmap section.\n");
-					if((file_addr=mmap(NULL,len,PROT_READ,MAP_SHARED,file_fd,offset*PAGE_SIZE))==MAP_FAILED) {
-						perror("mmap input file error\n");
-						return 1;
-					}
-					if((device_addr=mmap(NULL,len,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
-						perror("mmap device error\n");
-						return 1;
-					}
-					memcpy(device_addr,file_addr, len);
-					printf("ioctl section.\n");
-					tmp = tmp + len;
-					if(ioctl(dev_fd,0x12345678,len)<0) {
-						perror("ioctl error\n");
-						return 1;
-					}
-				} else {
-					printf("0 len ioctl section.\n");
-					if(ioctl(dev_fd,0x12345678,0)<0) {
-						perror("ioctl error\n");
-						return 1;
-					}
-				}
-				offset += 1;
-			}
-
-			munmap(file_addr,file_size);
-			munmap(device_addr,file_size);
-			break;
-
-
 			if((file_addr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,file_fd,0))==MAP_FAILED) {
 				perror("mmap input file error\n");
 				return 1;
@@ -110,9 +72,9 @@ int main (int argc, char* argv[])
 				return 1;
 			}
 
-			memcpy(device_addr,file_addr, len);
+			memcpy(device_addr,file_addr, file_size);
 
-			if((len_recv = ioctl(dev_fd, 0x12345678, file_size)) < file_size) {
+			if((len_sent = ioctl(dev_fd, 0x12345678, file_size)) < file_size) {
 				perror("file size inconsistency\n");
 				return 1;
 			}

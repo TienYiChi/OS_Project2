@@ -215,7 +215,7 @@ int master_open(struct inode *inode, struct file *filp)
 static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
-	size_t len = 0, data_size = 0, offset = 0;
+	size_t len = 0, data_size = 0, offset = 0, file_size = 0;
 	char *tmp;
 	void *buf_addr = NULL;
 	pgd_t *pgd;
@@ -243,7 +243,7 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			// ioctl_param is the len to be sent (in bytes).
-			size_t file_size = (size_t)ioctl_param;
+			file_size = (size_t)ioctl_param;
 			buf_addr = filp->private_data;
 			while (offset < (1 << SHIFT_ORDER)) {
 				if ((file_size - data_size) < PAGE_SIZE) {
