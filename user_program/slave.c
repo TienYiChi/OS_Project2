@@ -58,6 +58,12 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm'://mmap
+		
+			// mmap comes before ioctl, otherwise file->private_data is invalid.
+			if((device_addr=mmap(NULL,(1 << SHIFT_ORDER)*PAGE_SIZE ,PROT_READ,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
+				perror("mmap device error\n");
+				return 1;
+			}
 
 			if((file_size = ioctl(dev_fd, 0x12345678, 0)) < 0) {
 				perror("ioctl error\n");
@@ -67,10 +73,6 @@ int main (int argc, char* argv[])
 			ftruncate(file_fd, file_size);
 			if((file_addr=mmap(NULL,file_size,PROT_WRITE,MAP_SHARED,file_fd,0))==MAP_FAILED) {
 				perror("mmap input file error\n");
-				return 1;
-			}
-			if((device_addr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
-				perror("mmap device error\n");
 				return 1;
 			}
 
