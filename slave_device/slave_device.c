@@ -88,7 +88,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (remap_pfn_range(
 			vma,
 			vma->vm_start,
-			page_to_pfn((struct page *)(filp->private_data)),
+			page_to_pfn((struct page *)(filp->private_data)) << PAGE_SHIFT,
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
