@@ -20,7 +20,7 @@ int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size = -1, block_size = 0, len_sent = 0, len_package = 0;;
+	size_t ret, file_size = -1, block_size = 0, len_sent = 0, len_package = 0, offset=0;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
@@ -72,7 +72,7 @@ int main (int argc, char* argv[])
 				}
 				
 				posix_fallocate(file_fd, len_sent, block_size);
-				if((file_addr=mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, len_sent))==MAP_FAILED) {
+				if((file_addr=mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, offset))==MAP_FAILED) {
 					perror("slave: output file error\n");
 					return 1;
 				}
@@ -87,6 +87,7 @@ int main (int argc, char* argv[])
 				munmap(file_addr, block_size);
 				munmap(device_addr, block_size);
 
+				offset += block_size;
 				len_sent += len_package;
 			}
 			ftruncate(file_fd, file_size);
@@ -100,7 +101,7 @@ int main (int argc, char* argv[])
 	}
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
-	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
+	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size);
 
 
 	close(file_fd);

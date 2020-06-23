@@ -21,7 +21,7 @@ int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size, block_size = 0, len_sent = 0, len_package = 0;
+	size_t ret, file_size, block_size = 0, len_sent = 0, len_package = 0, offset = 0;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
@@ -73,7 +73,7 @@ int main (int argc, char* argv[])
 				} else {
 					block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
 				}
-				if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd,len_sent))==MAP_FAILED) {
+				if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd, offset))==MAP_FAILED) {
 					perror("master: input file error\n");
 					return 1;
 				}
@@ -86,6 +86,7 @@ int main (int argc, char* argv[])
 
 				len_package = ioctl(dev_fd, 0x12345678, block_size);
 				len_sent += len_package;
+				offset += block_size;
 
 				munmap(file_addr,block_size);
 				munmap(device_addr,block_size);
