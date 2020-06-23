@@ -71,7 +71,7 @@ int main (int argc, char* argv[])
 				
 				if(len > 0) {
 					printf("mmap section.\n");
-					if((file_addr=mmap(NULL,len,PROT_READ,MAP_SHARED,file_fd,offset << PAGE_SHIFT))==MAP_FAILED) {
+					if((file_addr=mmap(NULL,len,PROT_READ,MAP_SHARED,file_fd,offset*PAGE_SIZE))==MAP_FAILED) {
 						perror("mmap input file error\n");
 						return 1;
 					}
