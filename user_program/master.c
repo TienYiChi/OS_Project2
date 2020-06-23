@@ -44,6 +44,8 @@ int main (int argc, char* argv[])
 	{
 		perror("failed to get filesize\n");
 		return 1;
+	} else {
+		printf("master: file size %d bytes\n", file_size);
 	}
 
 
@@ -60,6 +62,7 @@ int main (int argc, char* argv[])
 			{
 				ret = read(file_fd, buf, sizeof(buf)); // read from the input file
 				write(dev_fd, buf, ret);//write to the the device
+				len_sent += ret;
 			}while(ret > 0);
 			break;
 		case 'm':
