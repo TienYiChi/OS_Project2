@@ -141,31 +141,27 @@ static void __exit slave_exit(void)
 	debugfs_remove(file1);
 }
 
-
 int slave_close(struct inode *inode, struct file *filp)
 {
-	// TODO: kfree or vfree
-	__free_pages(filp->private_data, SHIFT_ORDER);
+	free_pages(filp->private_data, SHIFT_ORDER);
 	filp->private_data = NULL;
 	return 0;
 }
 
-// TODO: kmalloc(k=ernel memory allocation) or vmalloc(virtual memory allocation)
-// Reference1: https://www.linuxjournal.com/article/6930
-// Reference2: http://brainychen72.blogspot.com/2013/08/linux-struct-file-privatedata.html
 int slave_open(struct inode *inode, struct file *filp)
 {
-	struct page *page_addr;
-	page_addr = alloc_pages(GFP_KERNEL, SHIFT_ORDER);
+	unsigned long page_addr;
+	page_addr = __get_free_pages(GFP_KERNEL, SHIFT_ORDER);
 	if(!page_addr) {
 		return -ENOMEM;
 	}
 	// IMPORTANT!!
 	// This address is "kernel virtual address",
 	// use virt_to_phys() to convert later.
-	filp->private_data = (unsigned long) page_address(page_addr);
+	filp->private_data = page_addr;
 	return 0;
 }
+
 static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;

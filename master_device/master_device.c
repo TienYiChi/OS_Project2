@@ -192,22 +192,22 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
-	__free_pages(filp->private_data, SHIFT_ORDER);
+	free_pages(filp->private_data, SHIFT_ORDER);
 	filp->private_data = NULL;
 	return 0;
 }
 
 int master_open(struct inode *inode, struct file *filp)
 {
-	struct page *page_addr;
-	page_addr = alloc_pages(GFP_KERNEL, SHIFT_ORDER);
+	unsigned long page_addr;
+	page_addr = __get_free_pages(GFP_KERNEL, SHIFT_ORDER);
 	if(!page_addr) {
 		return -ENOMEM;
 	}
 	// IMPORTANT!!
 	// This address is "kernel virtual address",
 	// use virt_to_phys() to convert later.
-	filp->private_data = (unsigned long) page_address(page_addr);
+	filp->private_data = page_addr;
 	return 0;
 }
 
