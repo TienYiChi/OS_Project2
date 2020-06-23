@@ -108,7 +108,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	vma->vm_private_data = filp->private_data;
 	
     mmap_dummy_open(vma);
-    return vma->vm_start;
+    return 0;
 }
 
 //file operations
