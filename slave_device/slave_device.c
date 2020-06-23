@@ -172,8 +172,7 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 
 	int addr_len ;
 	unsigned int i;
-	size_t len = 0, data_size = 0;
-	unsigned long offset = 0;
+	size_t len = 0;
 	char *tmp, ip[20], buf[BUF_SIZE];
 	struct page *p_print;
 	unsigned char *px;
@@ -225,14 +224,10 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 			break;
 		case slave_IOCTL_MMAP:
 			// Note: Use krecv anyway.
-			buf_addr = filp->private_data;
-			while (offset < (1 << SHIFT_ORDER)) {
-      			len = krecv(sockfd_cli, buf_addr, PAGE_SIZE, 0);
-				offset += 1;
-				data_size += len;
-				buf_addr = buf_addr + PAGE_SIZE*sizeof(char);
-    		}
-    		ret = data_size;
+			len = (size_t) ioctl_param;
+			buf_addr = (void *) filp->private_data;
+      		len = krecv(sockfd_cli, buf_addr, len, 0);
+    		ret = len;
 			break;
 
 		case slave_IOCTL_EXIT:

@@ -19,8 +19,8 @@
 int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
-	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size = -1, data_size = -1;
+	int dev_fd, file_fd;// the fd for the device and the fd for the input file
+	size_t ret, file_size = -1, block_size = 0, len_sent = 0, len_package = 0;;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
@@ -58,29 +58,37 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm'://mmap
-		
-			// mmap comes before ioctl, otherwise file->private_data is invalid.
-			if((device_addr=mmap(NULL,(1 << SHIFT_ORDER)*PAGE_SIZE ,PROT_READ,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
-				perror("mmap device error\n");
-				return 1;
+
+			while(1) {
+				block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
+
+				if((len_package = ioctl(dev_fd, 0x12345678, block_size)) < 0) {
+					perror("ioctl error\n");
+					return 1;
+				}
+				if(len_package == 0) {
+					file_size = len_sent;
+					break;
+				}
+				
+				fallocate(file_fd, 0, len_sent, len_package);
+				if((file_addr=mmap(NULL,len_package, PROT_WRITE, MAP_SHARED, file_fd, len_sent))==MAP_FAILED) {
+					perror("mmap input file error\n");
+					return 1;
+				}
+
+				if((device_addr=mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
+					perror("mmap device error\n");
+					return 1;
+				}
+
+				memcpy(file_addr,device_addr,len_package);
+
+				munmap(file_addr, len_package);
+				munmap(device_addr, block_size);
+
+				len_sent += len_package;
 			}
-
-			if((file_size = ioctl(dev_fd, 0x12345678, 0)) < 0) {
-				perror("ioctl error\n");
-				return 1;
-			}
-			
-			ftruncate(file_fd, file_size);
-			if((file_addr=mmap(NULL,file_size,PROT_WRITE,MAP_SHARED,file_fd,0))==MAP_FAILED) {
-				perror("mmap input file error\n");
-				return 1;
-			}
-
-			memcpy(file_addr,device_addr,file_size);
-
-			munmap(file_addr,file_size);
-			munmap(device_addr,file_size);
-
 			break;
 	}
 

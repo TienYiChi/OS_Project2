@@ -244,20 +244,10 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			break;
 		case master_IOCTL_MMAP:
 			// ioctl_param is the len to be sent (in bytes).
-			file_size = (size_t)ioctl_param;
-			buf_addr = filp->private_data;
-			while (offset < (1 << SHIFT_ORDER)) {
-				if ((file_size - data_size) < PAGE_SIZE) {
-                    len = file_size - data_size;
-                } else {
-					len = PAGE_SIZE;
-				}
-      			len = ksend(sockfd_cli, buf_addr, len, 0);
-				offset += 1;
-				data_size += len;
-				buf_addr = buf_addr + offset*PAGE_SIZE;
-    		}
-    		ret = data_size;
+			len = (size_t) ioctl_param;
+			buf_addr = (void *) filp->private_data;
+      		len = ksend(sockfd_cli, buf_addr, len, 0);
+    		ret = len;
 			break;
 		case master_IOCTL_EXIT:
 			if(kclose(sockfd_cli) == -1)
@@ -293,9 +283,6 @@ static ssize_t send_msg(struct file *file, const char __user *buf, size_t count,
 	return count;
 
 }
-
-
-
 
 module_init(master_init);
 module_exit(master_exit);

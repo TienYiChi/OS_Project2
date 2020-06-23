@@ -20,8 +20,8 @@ size_t get_filesize(const char* filename);//get the size of the input file
 int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
-	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size, offset = 0, tmp = 0, len_sent = 0;
+	int dev_fd, file_fd;// the fd for the device and the fd for the input file
+	size_t ret, file_size, block_size = 0, len_sent = 0, len_package = 0;
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
@@ -63,24 +63,36 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			if((file_addr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,file_fd,0))==MAP_FAILED) {
-				perror("mmap input file error\n");
-				return 1;
-			}
-			if((device_addr=mmap(NULL,file_size,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
-				perror("mmap device error\n");
-				return 1;
-			}
+			block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
+			while(len_sent < file_size) {
+				if(file_size - len_sent < block_size) {
+					block_size = file_size - len_sent;
+				} else {
+					block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
+				}
+				if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd,0))==MAP_FAILED) {
+					perror("mmap input file error\n");
+					return 1;
+				}
+				if((device_addr=mmap(NULL,block_size,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
+					perror("mmap device error\n");
+					return 1;
+				}
 
-			memcpy(device_addr,file_addr, file_size);
+				memcpy(device_addr,file_addr, block_size);
 
-			if((len_sent = ioctl(dev_fd, 0x12345678, file_size)) < file_size) {
+				len_package = ioctl(dev_fd, 0x12345678, block_size);
+				len_sent += len_package;
+
+				munmap(file_addr,block_size);
+				munmap(device_addr,block_size);
+			}
+			// Signal of transmission done
+			len_package = ioctl(dev_fd, 0x12345678, 0);
+			if(len_sent < file_size) {
 				perror("file size inconsistency\n");
 				return 1;
 			}
-			munmap(file_addr,file_size);
-			munmap(device_addr,file_size);
-
 			break;
 	}
 
