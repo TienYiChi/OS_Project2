@@ -88,7 +88,7 @@ static int custom_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (remap_pfn_range(
 			vma,
 			vma->vm_start,
-			page_to_pfn((struct page *)(filp->private_data)) << PAGE_SHIFT,
+			virt_to_phys(filp->private_data) >> PAGE_SHIFT,
 			vma->vm_end - vma->vm_start,
 			vma->vm_page_prot) < 0) {
 		printk(KERN_ERR "custom_mmap remap_page_range failed!\n");
@@ -160,8 +160,10 @@ int slave_open(struct inode *inode, struct file *filp)
 	if(!page_addr) {
 		return -ENOMEM;
 	}
-	// Save this address for later use.
-	filp->private_data = page_addr;
+	// IMPORTANT!!
+	// This address is "kernel virtual address",
+	// use virt_to_phys() to convert later.
+	filp->private_data = (unsigned long) page_address(page_addr);
 	return 0;
 }
 static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
