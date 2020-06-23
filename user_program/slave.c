@@ -71,7 +71,7 @@ int main (int argc, char* argv[])
 					break;
 				}
 				
-				posix_fallocate(file_fd, len_sent, block_size);
+				posix_fallocate(file_fd, offset, block_size);
 				if((file_addr=mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, offset))==MAP_FAILED) {
 					perror("slave: output file error\n");
 					return 1;
