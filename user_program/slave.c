@@ -71,7 +71,7 @@ int main (int argc, char* argv[])
 					break;
 				}
 				
-				fallocate(file_fd, 0, len_sent, len_package);
+				posix_fallocate(file_fd, len_sent, len_package);
 				if((file_addr=mmap(NULL,len_package, PROT_WRITE, MAP_SHARED, file_fd, len_sent))==MAP_FAILED) {
 					perror("mmap input file error\n");
 					return 1;
