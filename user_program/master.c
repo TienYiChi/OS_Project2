@@ -70,12 +70,12 @@ int main (int argc, char* argv[])
 				} else {
 					block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
 				}
-				if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd,0))==MAP_FAILED) {
-					perror("mmap input file error\n");
+				if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd,len_sent))==MAP_FAILED) {
+					perror("master: input file error\n");
 					return 1;
 				}
 				if((device_addr=mmap(NULL,block_size,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
-					perror("mmap device error\n");
+					perror("master: mmap device error\n");
 					return 1;
 				}
 
@@ -102,7 +102,7 @@ int main (int argc, char* argv[])
 	}
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
-	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
+	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, len_sent / 8);
 
 	close(file_fd);
 	close(dev_fd);

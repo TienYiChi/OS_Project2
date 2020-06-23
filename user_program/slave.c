@@ -73,12 +73,12 @@ int main (int argc, char* argv[])
 				
 				posix_fallocate(file_fd, len_sent, block_size);
 				if((file_addr=mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, len_sent))==MAP_FAILED) {
-					perror("mmap input file error\n");
+					perror("slave: output file error\n");
 					return 1;
 				}
 
 				if((device_addr=mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
-					perror("mmap device error\n");
+					perror("slave: mmap device error\n");
 					return 1;
 				}
 
@@ -89,7 +89,7 @@ int main (int argc, char* argv[])
 
 				len_sent += len_package;
 			}
-			ftruncate(file_fd, len_sent);
+			ftruncate(file_fd, file_size);
 			break;
 	}
 
