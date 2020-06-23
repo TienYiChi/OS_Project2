@@ -215,8 +215,7 @@ int master_open(struct inode *inode, struct file *filp)
 static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	long ret = -EINVAL;
-	size_t len = 0, data_size = 0, file_size = 0;
-	unsigned long offset = 0;
+	size_t len = 0;
 	char *tmp;
 	void *buf_addr = NULL;
 	pgd_t *pgd;

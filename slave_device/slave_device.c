@@ -171,11 +171,8 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 	long ret = -EINVAL;
 
 	int addr_len ;
-	unsigned int i;
 	size_t len = 0;
-	char *tmp, ip[20], buf[BUF_SIZE];
-	struct page *p_print;
-	unsigned char *px;
+	char *tmp, ip[20];
 	void *buf_addr = NULL;
 
     pgd_t *pgd;
