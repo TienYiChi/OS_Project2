@@ -35,11 +35,11 @@ int main (int argc, char* argv[])
 		file_num = file_num*10;
 		file_num = file_num + (argv[2][i] - '0');
 	}
-	char file_name[file_num][20];
-	for (int i = 0; i < file_num; i++)
-	{
-		strcpy(file_name[i], argv[i + 3]);
-	}
+	// char file_name[file_num][100];
+	// for (int i = 0; i < file_num; i++)
+	// {
+	// 	strcpy(file_name[i], argv[i + 3]);
+	// }
 	for (int i=0; i<file_num;i++)
 	{
 		block_size = 0, len_sent = 0, len_package = 0, offset = 0;
@@ -49,13 +49,13 @@ int main (int argc, char* argv[])
 			return 1;
 		}
 		gettimeofday(&start ,NULL);
-		if( (file_fd = open(file_name[i], O_RDWR)) < 0 )
+		if( (file_fd = open(argv[i + 3], O_RDWR)) < 0 )
 		{
 			perror("failed to open input file\n");
 			return 1;
 		}
 
-		if( (file_size = get_filesize(file_name[i])) < 0)
+		if( (file_size = get_filesize(argv[i + 3])) < 0)
 		{
 			perror("failed to get filesize\n");
 			return 1;
