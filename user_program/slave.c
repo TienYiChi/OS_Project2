@@ -28,42 +28,31 @@ int main (int argc, char* argv[])
 	double total_trans_time=0;
 	void *device_addr = NULL, *file_addr = NULL;
 
-	for (int i = 0; i < strlen(argv[3]); i++)
-	{
+	for (int i = 0; i < strlen(argv[3]); i++) {
 		file_num = file_num*10;
 		file_num = file_num + (argv[3][i] - '0');
 	}
-	// char file_name[file_num][20];
-	// for (int i = 0; i < file_num; i++)
-	// {
-	// 	strcpy(file_name[i], argv[i + 4]);
-	// }
 
-	for (int i=0; i<file_num;i++)
-	{
+	for (int i=0; i<file_num;i++) {
 		file_size = -1, block_size = 0, len_sent = 0, len_package = 0, offset=0;
-		if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
-		{
+		if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0) { //should be O_RDWR for PROT_WRITE when mmap()
 			perror("failed to open /dev/slave_device\n");
 			return 1;
 		}
 		gettimeofday(&start ,NULL);
-		if( (file_fd = open(argv[i + 4], O_RDWR | O_CREAT | O_TRUNC)) < 0)
-		{
+		if( (file_fd = open(argv[i + 4], O_RDWR | O_CREAT | O_TRUNC)) < 0) {
 			perror("failed to open input file\n");
 			return 1;
 		}
 
-		if(ioctl(dev_fd, 0x12345677,  argv[2]) == -1)	//0x12345677 : connect to master in the device
-		{
+		if(ioctl(dev_fd, 0x12345677,  argv[2]) == -1) {//0x12345677 : connect to master in the device
 			perror("ioclt create slave socket error\n");
 			return 1;
 		}
 
 	    write(1, "ioctl success\n", 14);
 
-		switch(argv[1][0])
-		{
+		switch(argv[1][0]) {
 			case 'f'://fcntl : read()/write()
 				do
 				{

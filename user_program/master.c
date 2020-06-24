@@ -29,34 +29,24 @@ int main (int argc, char* argv[])
 	double total_trans_time=0;
 	void *device_addr = NULL, *file_addr = NULL;
 
-
-	for (int i = 0; i < strlen(argv[2]); i++)
-	{
+	for (int i = 0; i < strlen(argv[2]); i++) {
 		file_num = file_num*10;
 		file_num = file_num + (argv[2][i] - '0');
 	}
-	// char file_name[file_num][100];
-	// for (int i = 0; i < file_num; i++)
-	// {
-	// 	strcpy(file_name[i], argv[i + 3]);
-	// }
-	for (int i=0; i<file_num;i++)
-	{
+
+	for (int i=0; i<file_num;i++) {
 		block_size = 0, len_sent = 0, len_package = 0, offset = 0;
-		if( (dev_fd = open("/dev/master_device", O_RDWR)) < 0)
-		{
+		if( (dev_fd = open("/dev/master_device", O_RDWR)) < 0) {
 			perror("failed to open /dev/master_device\n");
 			return 1;
 		}
 		gettimeofday(&start ,NULL);
-		if( (file_fd = open(argv[i + 3], O_RDWR)) < 0 )
-		{
+		if( (file_fd = open(argv[i + 3], O_RDWR)) < 0 ) {
 			perror("failed to open input file\n");
 			return 1;
 		}
 
-		if( (file_size = get_filesize(argv[i + 3])) < 0)
-		{
+		if( (file_size = get_filesize(argv[i + 3])) < 0) {
 			perror("failed to get filesize\n");
 			return 1;
 		} else {
@@ -64,8 +54,7 @@ int main (int argc, char* argv[])
 		}
 
 
-		if(ioctl(dev_fd, 0x12345677) == -1) //0x12345677 : create socket and accept the connection from the slave
-		{
+		if(ioctl(dev_fd, 0x12345677) == -1) {//0x12345677 : create socket and accept the connection from the slave
 			perror("ioclt server create socket error\n");
 			return 1;
 		}
