@@ -1,0 +1,40 @@
+ioctl success
+Transmission time: 0.038500 ms,File size: 32 bytes
+
+Total transmission time: 0.038500 ms,Total file size: 32 bytes
+ioctl success
+Transmission time: 0.028000 ms,File size: 859 bytes
+
+Total transmission time: 0.028000 ms,Total file size: 859 bytes
+ioctl success
+Transmission time: 0.032100 ms,File size: 1343 bytes
+
+Total transmission time: 0.032100 ms,Total file size: 1343 bytes
+ioctl success
+Transmission time: 0.028300 ms,File size: 1663 bytes
+
+Total transmission time: 0.028300 ms,Total file size: 1663 bytes
+ioctl success
+Transmission time: 0.028300 ms,File size: 2042 bytes
+
+Total transmission time: 0.028300 ms,Total file size: 2042 bytes
+ioctl success
+Transmission time: 0.031900 ms,File size: 3065 bytes
+
+Total transmission time: 0.031900 ms,Total file size: 3065 bytes
+ioctl success
+Transmission time: 0.040600 ms,File size: 2808 bytes
+
+Total transmission time: 0.040600 ms,Total file size: 2808 bytes
+ioctl success
+Transmission time: 0.033600 ms,File size: 4056 bytes
+
+Total transmission time: 0.033600 ms,Total file size: 4056 bytes
+ioctl success
+Transmission time: 0.029500 ms,File size: 3659 bytes
+
+Total transmission time: 0.029500 ms,Total file size: 3659 bytes
+ioctl success
+Transmission time: 0.030200 ms,File size: 4619 bytes
+
+Total transmission time: 0.030200 ms,Total file size: 4619 bytes

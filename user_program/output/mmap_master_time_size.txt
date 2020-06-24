@@ -1,0 +1,40 @@
+master: file size 32 bytes
+Transmission time: 3045.882500 ms, File size: 32 bytes
+
+Total transmission time: 3045.882500 ms,Total file size: 32 bytes
+master: file size 859 bytes
+Transmission time: 0.017100 ms, File size: 859 bytes
+
+Total transmission time: 0.017100 ms,Total file size: 859 bytes
+master: file size 1343 bytes
+Transmission time: 0.030100 ms, File size: 1343 bytes
+
+Total transmission time: 0.030100 ms,Total file size: 1343 bytes
+master: file size 1663 bytes
+Transmission time: 0.028900 ms, File size: 1663 bytes
+
+Total transmission time: 0.028900 ms,Total file size: 1663 bytes
+master: file size 2042 bytes
+Transmission time: 0.028900 ms, File size: 2042 bytes
+
+Total transmission time: 0.028900 ms,Total file size: 2042 bytes
+master: file size 3065 bytes
+Transmission time: 0.030100 ms, File size: 3065 bytes
+
+Total transmission time: 0.030100 ms,Total file size: 3065 bytes
+master: file size 2808 bytes
+Transmission time: 0.038300 ms, File size: 2808 bytes
+
+Total transmission time: 0.038300 ms,Total file size: 2808 bytes
+master: file size 4056 bytes
+Transmission time: 0.036500 ms, File size: 4056 bytes
+
+Total transmission time: 0.036500 ms,Total file size: 4056 bytes
+master: file size 3659 bytes
+Transmission time: 0.037900 ms, File size: 3659 bytes
+
+Total transmission time: 0.037900 ms,Total file size: 3659 bytes
+master: file size 4619 bytes
+Transmission time: 0.030700 ms, File size: 4619 bytes
+
+Total transmission time: 0.030700 ms,Total file size: 4619 bytes
