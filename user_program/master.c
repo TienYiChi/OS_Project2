@@ -77,15 +77,17 @@ int main (int argc, char* argv[])
 					} else {
 						block_size = (1 << SHIFT_ORDER) * PAGE_SIZE;
 					}
+
 					if((file_addr=mmap(NULL,block_size,PROT_READ,MAP_SHARED,file_fd, offset))==MAP_FAILED) {
 						perror("master: input file error\n");
 						return 1;
+					} else {
+						ioctl(dev_fd, 0x00000000, device_addr);
 					}
+
 					if((device_addr=mmap(NULL,block_size,PROT_WRITE,MAP_SHARED,dev_fd,0))==MAP_FAILED) {
 						perror("master: mmap device error\n");
 						return 1;
-					} else {
-						ioctl(dev_fd, 0x00000000, device_addr);
 					}
 
 					memcpy(device_addr,file_addr, block_size);
@@ -93,10 +95,10 @@ int main (int argc, char* argv[])
 					len_package = ioctl(dev_fd, 0x12345678, block_size);
 					len_sent += len_package;
 					offset += block_size;
-
-					munmap(file_addr,block_size);
-					munmap(device_addr,block_size);
 				}
+
+				//munmap(file_addr,block_size);
+				//munmap(device_addr,block_size);
 				// Signal of transmission done
 				len_package = ioctl(dev_fd, 0x12345678, 0);
 				if(len_sent < file_size) {

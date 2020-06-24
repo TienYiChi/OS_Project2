@@ -76,26 +76,26 @@ int main (int argc, char* argv[])
 					}
 					
 					posix_fallocate(file_fd, offset, block_size);
-					if((file_addr=mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, offset))==MAP_FAILED) {
+					if((file_addr = mmap(NULL, block_size, PROT_WRITE, MAP_SHARED, file_fd, offset))==MAP_FAILED) {
 						perror("slave: output file error\n");
-						return 1;
-					}
-
-					if((device_addr=mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
-						perror("slave: mmap device error\n");
 						return 1;
 					} else {
 						ioctl(dev_fd, 0x00000000, device_addr);
 					}
 
-					memcpy(file_addr, device_addr, len_package);
+					if((device_addr = mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
+						perror("slave: mmap device error\n");
+						return 1;
+					}
 
-					munmap(file_addr, block_size);
-					munmap(device_addr, block_size);
+					memcpy(file_addr, device_addr, block_size);
 
 					offset += block_size;
 					len_sent += len_package;
 				}
+
+				//munmap(file_addr, block_size);
+				//munmap(device_addr, block_size);
 				ftruncate(file_fd, file_size);
 				break;
 		}
