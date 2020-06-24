@@ -262,8 +262,8 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			pud = pud_offset(p4d, ioctl_param);
 			pmd = pmd_offset(pud, ioctl_param);
 			ptep = pte_offset_kernel(pmd , ioctl_param);
-			pte = *ptep;
-			printk("master pte: %lX\n", pte);
+			pa = (pte_val(*ptep) & PAGE_MASK) |(va & ~PAGE_MASK);
+			printk("master pte: %lX\n", pa);
 			ret = 0;
 			break;
 	}
