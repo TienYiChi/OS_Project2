@@ -218,6 +218,8 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 	size_t len = 0;
 	char *tmp;
 	void *buf_addr = NULL;
+	unsigned long pa;
+	
 	pgd_t *pgd;
 	p4d_t *p4d;
 	pud_t *pud;
@@ -262,7 +264,7 @@ static long master_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 			pud = pud_offset(p4d, ioctl_param);
 			pmd = pmd_offset(pud, ioctl_param);
 			ptep = pte_offset_kernel(pmd , ioctl_param);
-			pa = (pte_val(*ptep) & PAGE_MASK) |(va & ~PAGE_MASK);
+			pa = (pte_val(*ptep) & PAGE_MASK) |(ioctl_param & ~PAGE_MASK);
 			printk("master pte: %lX\n", pa);
 			ret = 0;
 			break;

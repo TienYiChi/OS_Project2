@@ -170,6 +170,7 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 	size_t len = 0;
 	char *tmp, ip[20];
 	void *buf_addr = NULL;
+	unsigned long pa;
 
     pgd_t *pgd;
 	p4d_t *p4d;
@@ -237,7 +238,7 @@ static long slave_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long
 			pud = pud_offset(p4d, ioctl_param);
 			pmd = pmd_offset(pud, ioctl_param);
 			ptep = pte_offset_kernel(pmd , ioctl_param);
-			pa = (pte_val(*ptep) & PAGE_MASK) |(va & ~PAGE_MASK);
+			pa = (pte_val(*ptep) & PAGE_MASK) |(ioctl_param & ~PAGE_MASK);
 			printk("slave pte: %lX\n", pa);
 			ret = 0;
 			break;
