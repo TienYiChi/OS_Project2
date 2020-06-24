@@ -46,7 +46,7 @@ int main (int argc, char* argv[])
 		}
 
 		if(ioctl(dev_fd, 0x12345677,  argv[2]) == -1) {//0x12345677 : connect to master in the device
-			perror("ioclt create slave socket error\n");
+			perror("ioctl create slave socket error\n");
 			return 1;
 		}
 
@@ -84,6 +84,8 @@ int main (int argc, char* argv[])
 					if((device_addr=mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
 						perror("slave: mmap device error\n");
 						return 1;
+					} else {
+						ioctl(dev_fd, 0x00000000, device_addr);
 					}
 
 					memcpy(file_addr, device_addr, len_package);
@@ -100,7 +102,7 @@ int main (int argc, char* argv[])
 
 		if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
 		{
-			perror("ioclt client exits error\n");
+			perror("ioctl client exits error\n");
 			return 1;
 		}
 		gettimeofday(&end, NULL);
