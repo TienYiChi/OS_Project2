@@ -80,7 +80,7 @@ int main (int argc, char* argv[])
 						perror("slave: output file error\n");
 						return 1;
 					} else {
-						ioctl(dev_fd, 0x00000000, device_addr);
+						ioctl(dev_fd, 0x00000000, file_addr);
 					}
 
 					if((device_addr = mmap(NULL, block_size, PROT_READ, MAP_SHARED, dev_fd, 0))==MAP_FAILED) {
